@@ -21558,18 +21558,22 @@
 			value: function render() {
 	
 				var entryList = this.props.entries.map(function (entry, i) {
-					//todo: make it not crash on initial load due to 0 entries
 					return _react2.default.createElement(
 						'div',
-						null,
-						_react2.default.createElement(_EntryPreview2.default, { key: entry._id, entry: entry, upvote: this.upvote.bind(this) }),
+						{ key: entry._id },
+						_react2.default.createElement(_EntryPreview2.default, { entry: entry }),
 						_react2.default.createElement(
 							'button',
-							{ onClick: this.upvote.bind(this) },
+							{ onClick: this.upvote },
 							'Upvote!'
+						),
+						_react2.default.createElement(
+							'button',
+							{ onClick: this.downvote },
+							'Downvote!'
 						)
 					);
-				});
+				}.bind(this));
 	
 				return _react2.default.createElement(
 					'div',

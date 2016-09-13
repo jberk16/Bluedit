@@ -39,14 +39,16 @@ class Entries extends Component {
 	render() {
 
 
-		var entryList = this.props.entries.map(function(entry, i){ //todo: make it not crash on initial load due to 0 entries
+		var entryList = this.props.entries.map(function(entry, i){
 		return (
-			<div>
-				<EntryPreview key={entry._id} entry={entry} upvote={this.upvote.bind(this)} />
-				<button onClick={this.upvote.bind(this)}>Upvote!</button>
+			<div key={entry._id}>
+				<EntryPreview entry={entry}/>
+				<button onClick={this.upvote}>Upvote!</button>
+				<button onClick={this.downvote}>Downvote!</button>
 			</div>
 			)
-		})
+		}.bind(this)
+		)
 
 		return (
 
