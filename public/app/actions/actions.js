@@ -9,6 +9,20 @@ export default {
 		}
 	},
 
+	entryUpdated: function(entry){
+		return {
+			type: constants.ENTRY_UPDATED,
+			entry: entry
+		}
+	},
+
+	entryCreated: function(entry){
+		return {
+			type: constants.ENTRY_CREATED,
+			entry: entry
+		}
+	},	
+
 	profilesReceived: function(profiles){
 		return {
 			type: constants.PROFILES_RECEIVED,

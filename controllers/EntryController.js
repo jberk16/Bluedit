@@ -38,7 +38,7 @@ module.exports = {
 			}
 
 			if (callback != null)
-				callback(null, Entry)
+				callback(null, entry)
 		})
 	},
 
@@ -57,19 +57,19 @@ module.exports = {
 		})
 	},
 
-	// put: function(id, params, callback){
-	// 	Place.findByIdAndUpdate(id, params, {new:true}, function(err, place){
-	// 		if (err){
-	// 			if (callback != null)
-	// 				callback(err, null)
+	put: function(id, params, callback){
+		Entry.findByIdAndUpdate(id, params, {new:true}, function(err, entry){
+			if (err){
+				if (callback != null)
+					callback(err, null)
 
-	// 			return
-	// 		}
+				return
+			}
 
-	// 		if (callback != null)
-	// 			callback(null, place.summary())
-	// 	})
-	// }
+			if (callback != null)
+				callback(null, entry)
+		})
+	}
 
 
 

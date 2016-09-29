@@ -43,6 +43,27 @@ export default {
 			else 
 	    		completion({message:res.body.message}, null)
 		})
+	},
+
+	handlePut: function(endpoint, body, completion){
+		superagent
+		.put(endpoint)
+		.send(body)
+		.set('Accept', 'application/json')
+		.end(function(err, res){
+			if (completion == null)
+				return
+
+			if (err){ 
+				completion(err, null)
+				return
+			}
+			
+			if (res.body.confirmation == 'success')
+	    		completion(null, res.body)
+			else 
+	    		completion({message:res.body.message}, null)
+		})
 	}
 
 

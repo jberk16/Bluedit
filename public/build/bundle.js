@@ -89,7 +89,6 @@
 				return _react2.default.createElement(
 					'div',
 					null,
-					'This is where text should show up',
 					_react2.default.createElement(_Entries2.default, null)
 				);
 			}
@@ -21525,8 +21524,15 @@
 	
 			var _this2 = _possibleConstructorReturn(this, (Entries.__proto__ || Object.getPrototypeOf(Entries)).call(this, props, context));
 	
+			_this2.updateNewEntry = _this2.updateNewEntry.bind(_this2);
+			_this2.addNewEntry = _this2.addNewEntry.bind(_this2);
+			//I probably should bind upvote/downvote but I'm scared to break stuff lol
 			_this2.state = {
-				entries: []
+				entries: [],
+				newEntry: {
+					title: '',
+					url: ''
+				}
 			};
 			return _this2;
 		}
@@ -21544,40 +21550,97 @@
 				});
 			}
 		}, {
+			key: 'updateNewEntry',
+			value: function updateNewEntry(event) {
+				var newEntry = Object.assign({}, this.state.newEntry);
+				newEntry[event.target.id] = event.target.value;
+				this.setState({
+					newEntry: newEntry
+				});
+				console.log(JSON.stringify(this.state.newEntry));
+			}
+		}, {
+			key: 'addNewEntry',
+			value: function addNewEntry(event) {
+				event.preventDefault();
+				_APIManager2.default.handlePost('/api/entry', this.state.newEntry, function (err, response) {
+					if (err) {
+						alert('OOPS - ' + err);
+						return;
+					}
+	
+					console.log('Entry CREATED: ' + JSON.stringify(response));
+					_store2.default.dispatch(_actions2.default.entryCreated(response.result));
+				});
+			}
+		}, {
 			key: 'upvote',
-			value: function upvote() {
+			value: function upvote(entry) {
 				console.log('Upvote! :)');
+				entry.score = entry.score + 1;
+				console.log('SCORE = ' + JSON.stringify(entry.score));
+				_APIManager2.default.handlePut('/api/entry/' + entry._id, entry, function (err, response) {
+					if (err) {
+						alert(err);
+						return;
+					}
+					_store2.default.dispatch(_actions2.default.entryUpdated(response.result));
+				});
 			}
 		}, {
 			key: 'downvote',
-			value: function downvote() {
+			value: function downvote(entry) {
 				console.log('Downvote! :(');
+				entry.score = entry.score - 1;
+				console.log('SCORE = ' + JSON.stringify(entry.score));
+				_APIManager2.default.handlePut('/api/entry/' + entry._id, entry, function (err, response) {
+					if (err) {
+						alert(err);
+						return;
+					}
+					_store2.default.dispatch(_actions2.default.entryUpdated(response.result));
+				});
 			}
 		}, {
 			key: 'render',
 			value: function render() {
 	
 				var entryList = this.props.entries.map(function (entry, i) {
+					var _this3 = this;
+	
+					//use arrow function because it passes the function instead of calling it automatically
+					//value for onclick needs to be function and not function call. this.upvote(entry) by itself is call
 					return _react2.default.createElement(
 						'div',
 						{ key: entry._id },
-						_react2.default.createElement(_EntryPreview2.default, { entry: entry }),
-						_react2.default.createElement(
-							'button',
-							{ onClick: this.upvote },
-							'Upvote!'
-						),
-						_react2.default.createElement(
-							'button',
-							{ onClick: this.downvote },
-							'Downvote!'
-						)
+						_react2.default.createElement(_EntryPreview2.default, { entry: entry, upvote: function upvote() {
+								return _this3.upvote(entry);
+							}, downvote: function downvote() {
+								return _this3.downvote(entry);
+							} })
 					);
-				}.bind(this));
+				}.bind(this) //bind entire map function to this- this fixes bug that stumped me for a week+
+				);
 	
 				return _react2.default.createElement(
 					'div',
 					null,
+					_react2.default.createElement(
+						'h2',
+						null,
+						'Add New Entries'
+					),
+					_react2.default.createElement('input', { onChange: this.updateNewEntry, type: 'text', id: 'title', placeholder: 'Title' }),
+					' ',
+					_react2.default.createElement('br', null),
+					_react2.default.createElement('input', { onChange: this.updateNewEntry, type: 'text', id: 'url', placeholder: 'URL' }),
+					' ',
+					_react2.default.createElement('br', null),
+					_react2.default.createElement(
+						'button',
+						{ onClick: this.addNewEntry },
+						'Add Entry'
+					),
 					_react2.default.createElement(
 						'h2',
 						null,
@@ -21633,6 +21696,19 @@
 		// using superagent here because for some reason, cookies don't get installed using fetch (wtf)
 		handlePost: function handlePost(endpoint, body, completion) {
 			_superagent2.default.post(endpoint).send(body).set('Accept', 'application/json').end(function (err, res) {
+				if (completion == null) return;
+	
+				if (err) {
+					completion(err, null);
+					return;
+				}
+	
+				if (res.body.confirmation == 'success') completion(null, res.body);else completion({ message: res.body.message }, null);
+			});
+		},
+	
+		handlePut: function handlePut(endpoint, body, completion) {
+			_superagent2.default.put(endpoint).send(body).set('Accept', 'application/json').end(function (err, res) {
 				if (completion == null) return;
 	
 				if (err) {
@@ -24143,6 +24219,33 @@
 	
 				return newState;
 	
+			case _constants2.default.ENTRY_UPDATED:
+				console.log('ENTRY_UPDATED: ' + JSON.stringify(action.entry));
+				var entryId = action.entry._id;
+				var index = state.entriesArray.findIndex(function (x) {
+					return x._id == entryId;
+				});
+				//use arrow function because it uses entriesArray as this
+	
+				var newArray = Object.assign([], state.entriesArray);
+				newArray[index] = action.entry;
+				var newState = Object.assign({}, state, {
+					entriesArray: newArray
+				});
+				//Above 4 lines are to avoid directly mutating state!!
+				//Directly modifying newState.entriesArray[index] counts as directly modifying entriesArray
+				//So make a new instance of entriesArray first, and make a newState with newArray in it
+	
+				return newState;
+	
+			case _constants2.default.ENTRY_CREATED:
+				var newState = Object.assign({}, state);
+				var array = Object.assign([], newState.entriesArray);
+				array.push(action.entry);
+				newState['entriesArray'] = array;
+	
+				return newState;
+	
 			default:
 				return state;
 		}
@@ -24167,6 +24270,8 @@
 	
 	module.exports = {
 		ENTRIES_RECEIVED: 'ENTRIES_RECEIVED',
+		ENTRY_UPDATED: 'ENTRY_UPDATED',
+		ENTRY_CREATED: 'ENTRY_CREATED',
 		PROFILES_RECEIVED: 'PROFILES_RECEIVED',
 		CURRENT_USER_RECEIVED: 'CURRENT_USER_RECEIVED'
 	};
@@ -24193,6 +24298,20 @@
 			return {
 				type: _constants2.default.ENTRIES_RECEIVED,
 				entries: entries
+			};
+		},
+	
+		entryUpdated: function entryUpdated(entry) {
+			return {
+				type: _constants2.default.ENTRY_UPDATED,
+				entry: entry
+			};
+		},
+	
+		entryCreated: function entryCreated(entry) {
+			return {
+				type: _constants2.default.ENTRY_CREATED,
+				entry: entry
 			};
 		},
 	
@@ -25121,11 +25240,14 @@
 	var EntryPreview = function (_Component) {
 		_inherits(EntryPreview, _Component);
 	
-		function EntryPreview() {
+		function EntryPreview(props, context) {
 			_classCallCheck(this, EntryPreview);
 	
-			return _possibleConstructorReturn(this, (EntryPreview.__proto__ || Object.getPrototypeOf(EntryPreview)).apply(this, arguments));
+			return _possibleConstructorReturn(this, (EntryPreview.__proto__ || Object.getPrototypeOf(EntryPreview)).call(this, props, context));
 		}
+	
+		//TODO: Fix links
+	
 	
 		_createClass(EntryPreview, [{
 			key: 'render',
@@ -25143,7 +25265,23 @@
 						this.props.entry.url
 					),
 					' ',
-					_react2.default.createElement('br', null)
+					_react2.default.createElement('br', null),
+					_react2.default.createElement(
+						'button',
+						{ onClick: this.props.upvote },
+						'Upvote!'
+					),
+					_react2.default.createElement(
+						'button',
+						{ onClick: this.props.downvote },
+						'Downvote!'
+					),
+					_react2.default.createElement(
+						'p',
+						null,
+						'Score: ',
+						this.props.entry.score
+					)
 				);
 			}
 		}]);

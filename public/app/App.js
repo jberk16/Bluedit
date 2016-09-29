@@ -9,7 +9,6 @@ class App extends Component {
 	render() {
 		return (
 			<div>
-				This is where text should show up 
 				<Entries />
 			</div>
 			)
